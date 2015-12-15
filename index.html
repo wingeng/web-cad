@@ -1,0 +1,40 @@
+<html>
+<style>
+
+#can {
+  background-color: lightgray;
+  border: 1px solid black;
+}
+#can-cont {
+  margin-top : 10px;
+}
+.tool-bar-item {
+  display : inline;
+}
+</style>
+
+<script src="gcode.js"></script>
+
+<body onload="gcode_init()">
+
+<div id="tools">
+     <div class="tool-bar-item" ><button id="draw" onclick="do_me()">do-draw</button></div>
+     <div id="msg" class="tool-bar-item">mouse</div>
+</div>
+
+<div id="can-cont">
+  
+  <canvas id="can" width="1024" height="480"
+      onclick="do_mclick(event)"
+      onmousedown="do_mdown(event)"
+      onmouseup="do_mup(event)"
+      oninput="do_key(event)"
+      onkeyup="do_key(event)"
+      onmousemove="do_mmove(event)"
+      onwheel="do_wheel(event)">
+</div>
+
+<div id="gcode"/><input id-"gcode"/> </div>
+
+</body>
+
