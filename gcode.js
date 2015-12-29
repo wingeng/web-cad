@@ -445,7 +445,7 @@ function abs_tan(y, x) {
 function draw_all () {
     draw_grid()
 
-    line_width(10)
+    line_width(1)
 
     for (i in gears) {
 	gears[i].draw()
