@@ -42,7 +42,7 @@ SelectTool = {
 	var objs = point_in_object_list(global_objects, e.grid_scaled.pt)
 	
 	if (objs) {
-	    selected_object = first(objs)
+	    selected_object = last(objs)
 	}
     },
 

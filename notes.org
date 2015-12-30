@@ -1,0 +1,34 @@
+* TODO
+
+** change bounding box representation
+
+right now it's a Rect() object.  Might be better to represent as an
+array of two points.
+
+pt-min, pt-max
+
+** General parsing of numbers 
+
+*** to modify the size/parameters of last object
+
+**** In line: location of last point
+
+** line tool
+
+*** Edit line?
+
+manually, via text box? select point and enter coordinates (in
+inches, mm, )
+
+
+** select tool
+
+*** draw select box 
+
+The select box is drawn if start of select is outside of any bounding
+box of any rectangle.
+
+Direction of selection determines mode of selecting objects.
+left -> right directions means to select objects fully enclosed.
+
+right -> left means select any objects that intersect with bounding box.

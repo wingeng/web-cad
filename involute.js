@@ -21,6 +21,10 @@ var origin_y_last = 0
 var scale_factor = 1
 var scale_last = 1
 
+// max, min of scaling via the scroll wheel
+var scale_max = 5
+var scale_min = 0.9
+
 var mouse_down_x
 var mouse_down_y
 
@@ -35,6 +39,8 @@ var global_objects = []
 var selected_object = null
 
 var dots_per_inch = 96
+var dots_per_mm = 96 / 25.4
+
 var current_tool = null
 
 // Number of dots per grid where 96 dots is == 1 inch
@@ -466,12 +472,18 @@ var mirror_angle = 45
 
 
 function involute_init () {
-    window.addEventListener('keydown', do_key, true)
+    // for some reason, need keyup to capture escape key 
     window.addEventListener('keyup', do_key, true)
 
+    // use keypress so that e.which can return ascii char
+    window.addEventListener('keypress', do_key, true)
+
+    /*
+     * Prevents leaving window
     window.onbeforeunload = function () {
 	return "Stay on this page?"
     }
+    */
 
 
     
@@ -482,7 +494,7 @@ function involute_init () {
     msg_obj = document.getElementById('msg');
 
     tool_set("line")
-    scale(.5)
+    scale(.9)
 
     draw_all()
 
@@ -595,7 +607,13 @@ function mirror_points (mirror_angle, pts) {
 
 
 function scale (x) {
+    if (x < scale_min)
+	x = scale_min
+    else if (x > scale_max)
+	x = scale_max
+
     scale_last = x
+    
     reset_ctx()
 }
 
@@ -655,25 +673,30 @@ function do_mmove (e) {
     event.preventDefault()
 }
 
+function do_key_up (e) {
+}
+
 function do_key (e) {
+    con_out(e, String.fromCharCode(e.keyCode), e.type)
+
     switch (e.keyCode) {
-    case 'D'.charCodeAt():
+    case 'd'.charCodeAt():
 	tool_set("dot", e)
 	break;
-    case 'L'.charCodeAt():
+    case 'l'.charCodeAt():
 	tool_set("line", e)
 	break;
-    case 'R'.charCodeAt():
+    case 'r'.charCodeAt():
 	tool_set("rectangle", e)
 	break;
-    case 'G'.charCodeAt():
+    case 'g'.charCodeAt():
 	tool_set("origin", e)
 	break
     case ' '.charCodeAt():
 	tool_set("select", e)
 	break
 
-    case 'C'.charCodeAt():
+    case 'c'.charCodeAt():
 	global_objects = []
 	selected_object = null
 	draw_all()

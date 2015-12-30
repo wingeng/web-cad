@@ -14,6 +14,8 @@
 }
 </style>
 
+<script src="numerics.js"></script>
+
 <script src="select_tool.js"></script>
 <script src="line_tool.js"></script>
 <script src="dot_tool.js"></script>
@@ -41,8 +43,7 @@
       onmousedown="do_mdown(event)"
       onmouseup="do_mup(event)"
       oninput="do_key(event)"
-      onkeyup="do_key(event)"
-      onkeydown="do_key(event)"
+      onkeydown="do_keypress(event)"
       onmousemove="do_mmove(event)"
       onwheel="do_wheel(event)">
 </div>
