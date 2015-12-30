@@ -14,6 +14,13 @@
 }
 </style>
 
+<script src="select_tool.js"></script>
+<script src="line_tool.js"></script>
+<script src="dot_tool.js"></script>
+
+<script src="line_object.js"></script>
+<script src="dot_object.js"></script>
+
 <script src="involute.js"></script>
 
 <body onload="involute_init()">
@@ -35,6 +42,7 @@
       onmouseup="do_mup(event)"
       oninput="do_key(event)"
       onkeyup="do_key(event)"
+      onkeydown="do_key(event)"
       onmousemove="do_mmove(event)"
       onwheel="do_wheel(event)">
 </div>

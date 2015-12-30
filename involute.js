@@ -5,6 +5,9 @@
 var canvas;
 var ctx;
 
+var SELECT_COLOR = "gray"
+var SELECT_LINE_WIDTH = 2
+
 var dot_width = 2;
 var dot_height = 2;
 
@@ -41,6 +44,11 @@ var current_tool = null
 //
 var grid_space = 6
 
+// global return code to say tool wants to 
+// redraw the canvas due to some change in global
+// object list
+RET_NEED_REDRAW = { need_redraw : true }
+
 function round_to_grid (p) {
     var half = grid_space / 2
 
@@ -67,7 +75,8 @@ function msg_out () {
 	str = str + " " + String(arguments[i])
     }
 
-    msg_obj.innerText = str
+    if (msg_obj)
+	msg_obj.innerText = str
 }
 
 function label_out () {
@@ -236,7 +245,9 @@ function circle (x, y, r) {
     var pt = trans_orig(x, y)
 
     context.beginPath();
-    context.arc(pt.x, pt.y, r, 0, 2 * Math.PI, false);
+    context.arc(pt.x, pt.y, r, 0, 2 * Math.PI);
+    if (context.fillStyle)
+	context.fill()
     context.stroke();
 }
 
@@ -250,20 +261,22 @@ function find_y_intercept (pts) {
     return min_pt;
 }
 
-function dot (x, y, color) {
+function dot (x, y, attributes) {
     if (typeof(x) == "object") {
 	x = x.x
 	y = x.y
     }
 
-    if (color == undefined) {
-	color = default_color;
-    }
+    color = prop_name(attributes, 'color', "black") 
+    lwidth = prop_name(attributes, 'line-width', 1) 
+    radius = prop_name(attributes, 'radius', 2)
 
+    line_width(lwidth)
     ctx.fillStyle = color
     ctx.strokeStyle = color
-    circle(x, y, 2)
+    circle(x, y, radius)
 }
+
 
 function deg2rad (deg) {
     return deg * Math.PI / 180
@@ -350,59 +363,7 @@ function abs_tan (y, x) {
     return deg_offset
 }
 
-SelectTool = {
-    "name" : "select",
-    "mouse_click" : function (e) {
-	for (var i in global_objects) {
-	    var obj = global_objects[i]
 
-	    selected_object = null
-	    if (obj.hasOwnProperty("pt_in_object")) {
-		if (obj.pt_in_object(e.grid_scaled.pt)) {
-		    selected_object = obj
-		}
-	    }
-	}
-    }
-}
-
-LineTool = {
-    "name" : "line",
-    "current" : [],
-    "mouse_click" : function (e) {
-	if (selected_object == null || selected_object.name != this.name) {
-	    selected_object = new OLine([e.grid_scaled.pt])
-	    global_objects.push(selected_object)
-	} else {
-	    selected_object.pts.push(e.grid_scaled.pt)
-	}
-    },
-    "mouse_move" : function (e) {
-	var pt = e.grid_scaled.pt
-
-	if (selected_object == null || selected_object.name != this.name) {
-	    return
-	}
-
-	draw_all()
-	var last_pt = last(selected_object.pts)
-
-	line(pt.x, pt.y, last_pt.x, last_pt.y)
-    },
-    "close" : function (e) {
-	selected_object = null
-	draw_all()
-    }
-    
-}
-
-DotTool = {
-    "name" : "dot",
-    "mouse_click" : function (e) {
-	var pt = e.grid_scaled.pt
-	global_objects.push(new ODot(pt))
-    }
-}
 
 OriginTool = {
     "mouse_click" : function (e) {
@@ -412,11 +373,26 @@ OriginTool = {
 
 function tool_do_event (event_name, e) {
     if (current_tool && current_tool.hasOwnProperty(event_name)) {
-	current_tool[event_name](e)
+	ret = current_tool[event_name](e)
+
+	if (ret && ret.need_redraw)
+	    draw_all()
     }
 }
 
-function tool_set (tname) {
+function prop_name (obj, name, default_value) {
+    if (obj && obj.hasOwnProperty(name))
+	return obj[name]
+
+    return default_value
+}
+
+function tool_set (tname, e) {
+    if (tname == prop_name(current_tool, "name", null))
+	return
+
+    tool_do_event("close", e)
+
     switch (tname) {
     case "dot":
 	current_tool = DotTool
@@ -435,15 +411,6 @@ function tool_set (tname) {
     }
 
     label_out("tool", tname)
-}
-
-function ODot (pt) {
-    function DotDraw () {
-	dot(pt.x, pt.y, "blue")
-    }
-    
-    this.draw = DotDraw
-    this.dot_pt = pt
 }
 
 /*
@@ -474,27 +441,6 @@ function pt_in_rect (pt, rect) {
     return pt.x > rect.x && pt.x < rect.x1 && pt.y > rect.y && pt.y < rect.y1
 }
 
-function OLine (pts) {
-    this.name = "line"
-    this.pts = pts
-    line_width(1)
-    this.draw = function () {
-	var color = "blue"
-	if (this == selected_object)
-	    color = "red"
-
-	draw_points(this.pts, color)
-	var last_pt = last(this.pts)
-
-	ctx.fillStyle = "green"
-	ctx.strokeStyle = "green"
-	circle(last_pt.x, last_pt.y, 3)
-    }
-
-    this.pt_in_object = function (pt) {
-	return pt_in_rect(pt, bbound(this.pts))
-    }
-}
 
 function draw_objects () {
     var gobjs = global_objects
@@ -519,8 +465,16 @@ function clear () {
 var mirror_angle = 45
 
 
-function involute_init() {
+function involute_init () {
     window.addEventListener('keydown', do_key, true)
+    window.addEventListener('keyup', do_key, true)
+
+    window.onbeforeunload = function () {
+	return "Stay on this page?"
+    }
+
+
+    
 
     canvas = document.getElementById('can');
     ctx = canvas.getContext('2d');
@@ -614,6 +568,15 @@ function rotate_points (rotate_angle, pts) {
     return new_pts
 }
 
+function grid_round_points (pts) {
+    var new_pts = []
+    
+    for (var i in pts) {
+	new_pts.push(new Point(round_to_grid(pts[i].x), round_to_grid(pts[i].y)))
+    }
+    return new_pts
+}
+
 function move_points (x, y, pts) {
     var new_pts = []
     for (var i in pts) {
@@ -630,24 +593,24 @@ function mirror_points (mirror_angle, pts) {
     return new_pts
 }
 
-var bdown = 0
-
 
 function scale (x) {
     scale_last = x
     reset_ctx()
 }
 
-function do_mdown(e) {
-    bdown = e.which
-
+function do_mdown (e) {
+    /*
+     * Save xy of last mouse down
+     */
     mouse_down_x = e.offsetX
     mouse_down_y = e.offsetY
 
-    if (e.altKey) {
-	set_origin(e.offsetX, e.offsetY)
-	draw_all()
-    }
+    var pt = grid_space_pt(e.offsetX, e.offsetY)
+
+    e.grid_scaled = { "pt" : pt }
+
+    tool_do_event("mouse_down", e)
 }
 
 function do_wheel (e) {
@@ -662,15 +625,12 @@ function do_mup (e) {
 
     e.grid_scaled = { "pt" : pt }
 
-    bdown = 0
-
-    delta_x = e.offsetX - mouse_down_x
-    delta_y = e.offsetY - mouse_down_y
+    tool_do_event("mouse_up", e)
 
     event.preventDefault()
 }
 
-function do_mclick(e) {
+function do_mclick (e) {
     var pt = grid_space_pt(e.offsetX, e.offsetY)
 
     e.grid_scaled = { "pt" : pt }
@@ -686,7 +646,8 @@ function do_mmove (e) {
     var pt = grid_space_pt(e.offsetX, e.offsetY)
 
     e.grid_scaled = { "pt" : pt }
-    tool_do_event("mouse_move", e)
+
+    ret = tool_do_event("mouse_move", e)
 
     msg_out("x: ", pt.x / dots_per_inch, "y: ", pt.y / dots_per_inch,
 	    "scale-factor: ", scale_factor)
@@ -697,19 +658,19 @@ function do_mmove (e) {
 function do_key (e) {
     switch (e.keyCode) {
     case 'D'.charCodeAt():
-	tool_set("dot")
+	tool_set("dot", e)
 	break;
     case 'L'.charCodeAt():
-	tool_set("line")
+	tool_set("line", e)
 	break;
     case 'R'.charCodeAt():
-	tool_set("rectangle")
+	tool_set("rectangle", e)
 	break;
     case 'G'.charCodeAt():
-	tool_set("origin")
+	tool_set("origin", e)
 	break
     case ' '.charCodeAt():
-	tool_set("select")
+	tool_set("select", e)
 	break
 
     case 'C'.charCodeAt():
@@ -717,12 +678,23 @@ function do_key (e) {
 	selected_object = null
 	draw_all()
 	break
+
+    case 46:
+	// delete key
+	tool_do_event("key_delete", e)
+	break
+
+    case 8:
+	tool_do_event("key_backspace", e)
+	break
+
     case 27:
 	// escape key
-	tool_do_event("close")
+	tool_do_event("close", e)
 	break
+
     default:
-	label_out("msg", e.keyCode)
+	label_out("msg", "unknown keycode: ", e.keyCode)
 	break;
     }
 }
