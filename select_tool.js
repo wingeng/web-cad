@@ -1,3 +1,8 @@
+/* 
+ *
+ * Copyright (c) 2014, Wing Eng
+ * All rights reserved.
+ */
 
 /*
  * Returns array of objects that contain pt

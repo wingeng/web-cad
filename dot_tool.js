@@ -1,3 +1,8 @@
+/* 
+ *
+ * Copyright (c) 2014, Wing Eng
+ * All rights reserved.
+ */
 DotTool = {
     "name" : "dot",
     invoke_key : 'D',

@@ -1,3 +1,9 @@
+/* 
+ *
+ * Copyright (c) 2014, Wing Eng
+ * All rights reserved.
+ */
+
 ArcTool = {
     name : "arc",
     invoke_key : 'A',

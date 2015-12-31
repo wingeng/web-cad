@@ -1,3 +1,8 @@
+/* 
+ *
+ * Copyright (c) 2014, Wing Eng
+ * All rights reserved.
+ */
 /*
  * Global values that are initialized before all other scripts
  */

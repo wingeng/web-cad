@@ -1,3 +1,9 @@
+/* 
+ *
+ * Copyright (c) 2014, Wing Eng
+ * All rights reserved.
+ */
+
 function ArcObject (pts) {
     this.__proto__ = BaseObject
     this.name = "arc"
