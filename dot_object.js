@@ -1,8 +1,13 @@
 
-function dot_bound_box (pt) {
+function dot_bound_box (pt, margin) {
     var bbox = []
-    var dot_margin = 10 * scale_factor
-    con_out(dot_margin)
+    var dot_margin
+    
+    if (! margin)
+	margin = 10
+
+    dot_margin = margin * scale_factor
+
     bbox = [ new Point(pt.x - dot_margin, pt.y - dot_margin),
 	     new Point(pt.x + dot_margin, pt.y - dot_margin),
 	     new Point(pt.x + dot_margin, pt.y + dot_margin),
@@ -15,6 +20,8 @@ function dot_bound_box (pt) {
 
 function DotObject (pt) {
     this.pts = [pt]
+
+    this.__proto__ = BaseObject
 
     this.draw = function () {
 	var pts = this.pts
@@ -37,10 +44,13 @@ function DotObject (pt) {
 	this.pts = move_points(x, y, this.pts)
     }
 
-    this.pt_in_object = function (pt) {
-	var r = pt_in_rect(pt, bbound(dot_bound_box(this.pts[0])))
-	con_out("p in do: ", r, pt, dot_bound_box(this.pts[0]))
-	return pt_in_rect(pt, bbound(dot_bound_box(this.pts[0])))
+    this.pt_in_object = function (pt, margin) {
+	var r = pt_in_rect(pt, bbound(this.pts, margin))
+	return r
+    }
+
+    this.pt_in_control_pt = function (pt, margin) {
+	return point_in_point_list(this.pts, pt)
     }
 }
 

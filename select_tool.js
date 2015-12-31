@@ -3,16 +3,14 @@
  * Returns array of objects that contain pt
  *         NULL if no objects bound pt
  */
-function point_in_object_list (objs, pt) {
+function point_in_object_list (objs, pt, margin) {
     var found_objs = []
     var obj = objs
 
     for (var i in objs) {
 	var o = objs[i]
-	if (o.hasOwnProperty("pt_in_object")) {
-	    if (o.pt_in_object(pt)) {
-		found_objs.push(o)
-	    }
+	if (o.pt_in_object(pt, margin)) {
+	    found_objs.push(o)
 	}
     }
 
@@ -35,18 +33,30 @@ function select_delete_object (obj_list, obj) {
 
 SelectTool = {
     "name" : "select",
+    invoke_key : ' ',
+    cursor_style : "initial",
+    selected_control_pt : null,
 
     mouse_down : function (e) {
 	selected_object = null
+	this.selected_control_pt = null
 
-	var objs = point_in_object_list(global_objects, e.grid_scaled.pt)
-	
-	if (objs) {
-	    selected_object = last(objs)
+	var objs = point_in_object_list(global_objects, e.grid_scaled.pt,
+				       CONTROL_MARGIN * scale_factor)
+	selected_object = last(objs)
+	if (! selected_object) return
+
+	var so = selected_object
+	if (e.altKey) {
+	    var obj = so.clone()
+	    if (obj) {
+		global_objects.push(obj)
+		selected_object = obj
+	    }
 	}
-    },
 
-    mouse_click : function (e) {
+	this.selected_control_pt = so.pt_in_control_pt(e.grid_scaled.pt,
+						       CONTROL_MARGIN)
     },
 
     // On mouse up we need to move/jiggle the object to the nearest
@@ -60,7 +70,21 @@ SelectTool = {
 
 	delta_x = e.offsetX - mouse_down_x
 	delta_y = e.offsetY - mouse_down_y
-	if (e.which == 1 && selected_object.hasOwnProperty("move")) {
+
+	var cpt = this.selected_control_pt
+	if (cpt) {
+	    this.pvt.move_control_pt(cpt, delta_x * scale_factor,
+				     delta_y * scale_factor)
+	    mouse_down_x = e.offsetX
+	    mouse_down_y = e.offsetY
+
+	    this.need_jiggle_select_object_to_grid = true
+
+	    return RET_NEED_REDRAW
+	}
+
+
+	if (e.which == 1 && "move" in selected_object) {
 	    selected_object.move(delta_x * scale_factor,
 				 delta_y * scale_factor)
 	    
@@ -73,6 +97,8 @@ SelectTool = {
     },
 
     mouse_up : function (e) {
+	this.selected_control_pt = null
+
 	if (selected_object && this.need_jiggle_select_object_to_grid) {
 	    selected_object.pts = grid_round_points(selected_object.pts)
 
@@ -86,9 +112,22 @@ SelectTool = {
 	selected_object = null
 
 	return RET_NEED_REDRAW
+    },
+
+    /*
+     * Hide functions private to select_tool
+     */
+    pvt : {
+	move_control_pt : function (pt, x, y) {
+	    pt.x += x
+	    pt.y += y
+	}
     }
-    
+
 }
+
+global_tools.select = SelectTool
+
 /*
  * Local Variables: 
  * mode: javascript

@@ -2,59 +2,6 @@
  * Copyright (c) 2014, Wing Eng
  * All rights reserved.
  */
-var canvas;
-var ctx;
-
-var SELECT_COLOR = "gray"
-var SELECT_LINE_WIDTH = 2
-
-var dot_width = 2;
-var dot_height = 2;
-
-var default_color = "black";
-var origin_x
-var origin_y
-
-var origin_x_last = 0
-var origin_y_last = 0
-
-var scale_factor = 1
-var scale_last = 1
-
-// max, min of scaling via the scroll wheel
-var scale_max = 5
-var scale_min = 0.9
-
-var mouse_down_x
-var mouse_down_y
-
-var main_gear_pts
-
-var msg_obj
-
-var pixels_per_mm = 10
-
-var gears = []
-var global_objects = []
-var selected_object = null
-
-var dots_per_inch = 96
-var dots_per_mm = 96 / 25.4
-
-var current_tool = null
-
-// Number of dots per grid where 96 dots is == 1 inch
-// more dots means each grid is a large measure.
-//
-// 12 = 1/8 inch grid, 6 = 1/16 inch grid
-//
-var grid_space = 6
-
-// global return code to say tool wants to 
-// redraw the canvas due to some change in global
-// object list
-RET_NEED_REDRAW = { need_redraw : true }
-
 function round_to_grid (p) {
     var half = grid_space / 2
 
@@ -107,7 +54,7 @@ function con_out () {
 }
 
 function last (o) {
-    if (typeof(o) == "object") {
+    if (o != null && typeof(o) == "object") {
 	return o[o.length - 1]
     } else {
 	return undefined
@@ -115,7 +62,7 @@ function last (o) {
 }
 
 function first (o) {
-    if (typeof(o) == "object") {
+    if (o != null && typeof(o) == "object") {
 	return o[0]
     } else {
 	return undefined
@@ -192,15 +139,11 @@ function line (x1, y1, x2, y2, color) {
 	color = default_color;
     }
 
-    var p1 = trans_orig(x1, y1);
-    var p2 = trans_orig(x2, y2);
-
-    
     ctx.beginPath();
     ctx.strokeStyle = color;
 
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
     ctx.stroke();
 }
 
@@ -399,22 +342,13 @@ function tool_set (tname, e) {
 
     tool_do_event("close", e)
 
-    switch (tname) {
-    case "dot":
-	current_tool = DotTool
-	break
-    case "origin":
-	current_tool = OriginTool
-	break
-    case "line":
-	current_tool = LineTool
-	break
-    case "select":
-	current_tool = SelectTool
-	break
-    default:
+    if (tname in global_tools) {
+	current_tool = global_tools[tname]
+    } else {
 	return
     }
+
+    canvas.style.cursor = current_tool.cursor_style
 
     label_out("tool", tname)
 }
@@ -423,7 +357,10 @@ function tool_set (tname, e) {
  * Returns the bounding box of pts
  * [min-x, min-y, max-x, max-y]
  */
-function bbound (pts) {
+function bbound (pts, margin) {
+    if (! margin)
+	margin = 0
+    
     var min_x = pts[0].x
     var min_y = pts[0].y
     var max_x = pts[0].x
@@ -439,6 +376,11 @@ function bbound (pts) {
 	if (pts[i].y > max_y)
 	    max_y = pts[i].y
     }
+
+    min_x -= margin
+    min_y -= margin
+    max_x += margin
+    max_y += margin
 
     return new Rect(min_x, min_y, max_x, max_y)
 }
@@ -492,11 +434,15 @@ function involute_init () {
     ctx = canvas.getContext('2d');
 
     msg_obj = document.getElementById('msg');
+    numerics_init()
+
+    canvas.style.cursor = "crosshair"
 
     tool_set("line")
     scale(.9)
 
     draw_all()
+
 
     msg_out("mouse on ", 3, 6)
 }
@@ -660,6 +606,16 @@ function do_mclick (e) {
     event.preventDefault()
 }
 
+function do_dblclick (e) {
+    var pt = grid_space_pt(e.offsetX, e.offsetY)
+
+    e.grid_scaled = { "pt" : pt }
+
+    ret = tool_do_event("mouse_dbl_click", e)
+
+    event.preventDefault()
+}
+
 function do_mmove (e) {
     var pt = grid_space_pt(e.offsetX, e.offsetY)
 
@@ -677,25 +633,17 @@ function do_key_up (e) {
 }
 
 function do_key (e) {
-    con_out(e, String.fromCharCode(e.keyCode), e.type)
+    /*
+     * See if keyCode is handle by one of the tools
+     */
+    for (var i in global_tools) {
+	if (e.keyCode ==  global_tools[i].invoke_key.charCodeAt()) {
+	    tool_set(global_tools[i].name)
+	    return
+	}
+    }
 
     switch (e.keyCode) {
-    case 'd'.charCodeAt():
-	tool_set("dot", e)
-	break;
-    case 'l'.charCodeAt():
-	tool_set("line", e)
-	break;
-    case 'r'.charCodeAt():
-	tool_set("rectangle", e)
-	break;
-    case 'g'.charCodeAt():
-	tool_set("origin", e)
-	break
-    case ' '.charCodeAt():
-	tool_set("select", e)
-	break
-
     case 'c'.charCodeAt():
 	global_objects = []
 	selected_object = null

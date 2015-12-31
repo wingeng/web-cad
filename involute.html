@@ -14,14 +14,20 @@
 }
 </style>
 
+<script src="js/three.min.js"></script>
+
+<script src="global.js"></script>
 <script src="numerics.js"></script>
+<script src="base_object.js"></script>
 
 <script src="select_tool.js"></script>
 <script src="line_tool.js"></script>
 <script src="dot_tool.js"></script>
+<script src="arc_tool.js"></script>
 
 <script src="line_object.js"></script>
 <script src="dot_object.js"></script>
+<script src="arc_object.js"></script>
 
 <script src="involute.js"></script>
 
@@ -39,6 +45,7 @@
 <div id="can-cont">
   
   <canvas id="can" width="1024" height="480"
+      ondblclick="do_dblclick(event)"
       onclick="do_mclick(event)"
       onmousedown="do_mdown(event)"
       onmouseup="do_mup(event)"

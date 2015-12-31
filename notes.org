@@ -16,6 +16,10 @@ pt-min, pt-max
 ** line tool
 
 *** Edit line?
+Add to points, insert points.
+
+*** Join lines
+
 
 manually, via text box? select point and enter coordinates (in
 inches, mm, )
@@ -32,3 +36,16 @@ Direction of selection determines mode of selecting objects.
 left -> right directions means to select objects fully enclosed.
 
 right -> left means select any objects that intersect with bounding box.
+
+*** duplicate selected object
+
+Use alt key to make a copy of object 
+
+** Arc/Fillet Tool
+
+Draw a arc based on two points
+
+
+** html
+
+*** make a object box
